@@ -375,19 +375,24 @@ public class PX4LogReader extends BinaryLogReader {
                     int msgType = readHeader();     // Don't try to handle errors in formats
                     if (msgType == PX4LogMessageDescription.FORMAT.type) {
                         // Message description
-                        PX4LogMessageDescription msgDescr = new PX4LogMessageDescription(buffer);
-                        messageDescriptions.put(msgDescr.type, msgDescr);
-                        if ("TIME".equals(msgDescr.name)) {
-                            formatPX4 = true;
-                        }
-                        if (!hideMsgs.contains(msgDescr.name)) {
-                            for (int i = 0; i < msgDescr.fields.length; i++) {
-                                String field = msgDescr.fields[i];
-                                String format = formatNames.get(Character.toString(msgDescr.format.charAt(i)));
-                                if (i != 0 || !("TimeMS".equals(field) || "TimeUS".equals(field))) {
-                                    fieldsList.put(msgDescr.name + "." + field, format);
+                        try {
+                            PX4LogMessageDescription msgDescr = new PX4LogMessageDescription(buffer);
+                            messageDescriptions.put(msgDescr.type, msgDescr);
+                            if ("TIME".equals(msgDescr.name)) {
+                                formatPX4 = true;
+                            }
+                            if (!hideMsgs.contains(msgDescr.name)) {
+                                for (int i = 0; i < msgDescr.fields.length; i++) {
+                                    String field = msgDescr.fields[i];
+                                    String format = formatNames.get(Character.toString(msgDescr.format.charAt(i)));
+                                    if (i != 0 || !("TimeMS".equals(field) || "TimeUS".equals(field))) {
+                                        fieldsList.put(msgDescr.name + "." + field, format);
+                                    }
                                 }
                             }
+                        }
+                        catch(Exception e) {
+                            e.printStackTrace();
                         }
                     } else {
                         // Data message
