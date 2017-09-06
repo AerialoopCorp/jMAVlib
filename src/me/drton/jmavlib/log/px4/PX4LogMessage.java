@@ -8,14 +8,21 @@ import java.util.List;
 public class PX4LogMessage {
     public final PX4LogMessageDescription description;
     private final List<Object> data;
+    private final List<byte[]> raw;
 
-    public PX4LogMessage(PX4LogMessageDescription description, List<Object> data) {
+    public PX4LogMessage(PX4LogMessageDescription description, List<Object> data, List<byte[]> raw) {
         this.description = description;
         this.data = data;
+        this.raw = raw;
     }
 
     public Object get(int idx) {
         return data.get(idx);
+    }
+
+    public byte[] getRaw(String field) {
+        Integer idx = description.fieldsMap.get(field);
+        return idx == null ? null : raw.get(idx);
     }
 
     public long getLong(int idx) {

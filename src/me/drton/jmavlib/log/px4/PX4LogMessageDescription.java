@@ -35,6 +35,12 @@ public class PX4LogMessageDescription {
         return p.length > 0 ? p[0] : "";
     }
 
+    private static String getString(ByteBuffer buffer, byte[] strBuf, int len) {
+        buffer.get(strBuf);
+        String[] p = new String(strBuf, charset).split("\0");
+        return p.length > 0 ? p[0] : "";
+    }
+
     public PX4LogMessageDescription(ByteBuffer buffer) {
         type = buffer.get() & 0xFF;
         length = buffer.get() & 0xFF;
@@ -55,8 +61,10 @@ public class PX4LogMessageDescription {
 
     public PX4LogMessage parseMessage(ByteBuffer buffer) {
         List<Object> data = new ArrayList<Object>(format.length());
+        List<byte[]> raw = new ArrayList<byte[]>(format.length());
         for (char f : format.toCharArray()) {
             Object v;
+            byte[] strBuf = null;
             if (f == 'f') {
                 v = buffer.getFloat();
             } else if (f == 'q' || f == 'Q') {
@@ -78,7 +86,8 @@ public class PX4LogMessageDescription {
             } else if (f == 'n') {
                 v = getString(buffer, 4);
             } else if (f == 'N') {
-                v = getString(buffer, 16);
+                strBuf = new byte[16];
+                v = getString(buffer, strBuf, 16);
             } else if (f == 'Z') {
                 v = getString(buffer, 64);
             } else if (f == 'c') {
@@ -93,8 +102,9 @@ public class PX4LogMessageDescription {
                 throw new RuntimeException("Invalid format char in message " + name + ": " + f);
             }
             data.add(v);
+            raw.add(strBuf);
         }
-        return new PX4LogMessage(this, data);
+        return new PX4LogMessage(this, data, raw);
     }
 
     public List<String> getFields() {

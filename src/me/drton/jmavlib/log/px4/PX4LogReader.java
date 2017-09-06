@@ -5,6 +5,8 @@ import me.drton.jmavlib.log.FormatErrorException;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -150,6 +152,18 @@ public class PX4LogReader extends BinaryLogReader {
                     String hw = (String) msg.get("Arch");
                     if (hw != null) {
                         version.put("HW", hw);
+                    }
+                    byte[] uidRaw = msg.getRaw("UID");
+                    if (uidRaw != null) {
+                        StringBuffer uid = new StringBuffer(24);
+                        for(int i = 0; i < 12; i++) {
+                            uid.append(String.format("%02x", uidRaw[i]));
+                        }
+                        version.put("UID", uid);
+                    }
+                    Long cts = (Long)msg.get("CTS");
+                    if (cts != null) {
+                        version.put("CTS", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(cts * (long)1e3)));
                     }
                 }
             } else {
