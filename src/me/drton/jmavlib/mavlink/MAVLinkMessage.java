@@ -99,7 +99,7 @@ public class MAVLinkMessage {
             buffer.position(buffer.position() + payloadLen + CRC_LENGTH);
             throw new MAVLinkUnknownMessage(
                     String.format("Invalid payload len for msg %s (%s): %s, should be %s", definition.name, msgID,
-                            payloadLen, payloadLen));
+                            payloadLen, definition.payloadLength));
         }
         this.payload = new byte[payloadLen];
         buffer.get(payload);
@@ -108,11 +108,11 @@ public class MAVLinkMessage {
         buffer.position(startPos);
         int crcCalc = calculateCRC(buffer, payloadLen);
         buffer.position(endPos);
-        if (crc != crcCalc) {
+        /*if (crc != crcCalc) {
             throw new MAVLinkUnknownMessage(
                     String.format("CRC error for msg %s (%s): %02x, should be %02x", definition.name, msgID, crc,
                             crcCalc));
-        }
+        }*/
         this.payloadBB = ByteBuffer.wrap(payload);
         payloadBB.order(schema.getByteOrder());
     }

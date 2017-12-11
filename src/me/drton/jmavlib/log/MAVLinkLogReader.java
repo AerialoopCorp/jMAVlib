@@ -54,6 +54,7 @@ public class MAVLinkLogReader implements LogReader {
             if (msg == null) {
                 break;
             }
+
             long t = getTime(msg);
             if (t >= 0) {
                 if (t > seekTime) {
@@ -187,11 +188,17 @@ public class MAVLinkLogReader implements LogReader {
         if (msg == null) {
             throw new EOFException();
         }
+        long t = getTime(msg);
+        //System.out.println(t + ": " + msg.getMsgName());
         for (MAVLinkField field : msg.definition.fields) {
-            update.put(fieldName(msg, field), msg.get(field));
-            long t = getTime(msg);
-            if (t >= 0 && t > time) {
-                time = t;
+            try {
+                update.put(fieldName(msg, field), msg.get(field));
+                t = getTime(msg);
+                if (t >= 0 && t > time) {
+                    time = t;
+                }
+            } catch(Exception e) {
+                // ignore
             }
         }
         return time;
