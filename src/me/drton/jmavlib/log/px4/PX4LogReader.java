@@ -182,7 +182,11 @@ public class PX4LogReader extends BinaryLogReader {
 
             // Parameters
             if ("PARM".equals(msg.description.name)) {
-                parameters.put((String) msg.get("Name"), msg.get("Value"));
+                Object value = msg.get("Value");
+                if (((Number)msg.get("Type")).intValue() == 1) {
+                    value = ((Number)msg.get("Value")).intValue();
+                }
+                parameters.put((String) msg.get("Name"), value);
             }
 
             if ("GPS".equals(msg.description.name)) {
