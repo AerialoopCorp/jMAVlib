@@ -171,6 +171,10 @@ public class MAVLinkLogReader implements LogReader {
 
     private long getTime(MAVLinkMessage msg) {
         MAVLinkField field;
+        if ("POSITION_TARGET_GLOBAL_INT".equals(msg.getMsgName())) {
+            // the timestamp of this message seems to be broken
+            return -1;
+        }
         field = msg.definition.fieldsByName.get("time_usec");
         if (field != null) {
             return ((Number) msg.get(field)).longValue();

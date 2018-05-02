@@ -183,7 +183,8 @@ public class PX4LogReader extends BinaryLogReader {
             // Parameters
             if ("PARM".equals(msg.description.name)) {
                 Object value = msg.get("Value");
-                if (((Number)msg.get("Type")).intValue() == 1) {
+                Number type = (Number)msg.get("Type");
+                if (type != null && type.intValue() == 1) {
                     value = ((Number)msg.get("Value")).intValue();
                 }
                 parameters.put((String) msg.get("Name"), value);
