@@ -24,6 +24,7 @@ public class PX4LogReader extends BinaryLogReader {
     private Map<String, String> fieldsList = null;
     private long time = 0;
     private PX4LogMessage lastMsg = null;
+    private PX4LogMessage debugMsg = null;
     private long sizeUpdates = -1;
     private long sizeMicroseconds = -1;
     private long startMicroseconds = -1;
@@ -451,7 +452,11 @@ public class PX4LogReader extends BinaryLogReader {
                 continue;
             }
             if (syncErr >= 0) {
-                errors.add(new FormatErrorException(syncErr, "Bad message header"));
+                if (debugMsg != null) {
+                    errors.add(new FormatErrorException(syncErr, String.format("Bad message header after %s", debugMsg.description)));
+                } else {
+                    errors.add(new FormatErrorException(syncErr, "Bad message header"));
+                }
             }
             return buffer.get() & 0xFF;
         }
@@ -479,7 +484,8 @@ public class PX4LogReader extends BinaryLogReader {
                 errors.add(new FormatErrorException(pos, "Unexpected end of file"));
                 throw e;
             }
-            return messageDescription.parseMessage(buffer);
+            debugMsg = messageDescription.parseMessage(buffer);
+            return debugMsg;
         }
     }
 
