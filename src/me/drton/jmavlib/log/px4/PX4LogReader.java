@@ -2,6 +2,7 @@ package me.drton.jmavlib.log.px4;
 
 import me.drton.jmavlib.log.BinaryLogReader;
 import me.drton.jmavlib.log.FormatErrorException;
+import me.drton.jmavlib.log.MAVLinkLogReader;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -34,6 +35,7 @@ public class PX4LogReader extends BinaryLogReader {
     private List<Exception> errors = new ArrayList<Exception>();
     private String tsName = null;
     private boolean tsMicros;
+    private List<MavlinkLog> logs = new ArrayList<MavlinkLog>();
 
     private static Set<String> hideMsgs = new HashSet<String>();
     private static Map<String, String> formatNames = new HashMap<String, String>();
@@ -122,6 +124,7 @@ public class PX4LogReader extends BinaryLogReader {
             } catch (EOFException e) {
                 break;
             }
+
             // Time range
             if (formatPX4) {
                 if ("TIME".equals(msg.description.name)) {
@@ -215,6 +218,13 @@ public class PX4LogReader extends BinaryLogReader {
                         }
                     } catch (Exception ignored) {
                     }
+                }
+            }
+
+            if ("TXT".equals(msg.description.name)) {
+                try {
+                    logs.add(new MavlinkLog(((Number)msg.get("Severity")).intValue(), (String)msg.get("Text"), time - timeStart));
+                } catch (Exception ignored) {
                 }
             }
         }
@@ -317,6 +327,13 @@ public class PX4LogReader extends BinaryLogReader {
 
     private void applyMsg(Map<String, Object> update, PX4LogMessage msg) {
         String[] fields = msg.description.fields;
+
+        int num = -1;
+        if ("ESC".equals(msg.description.name)) {
+            Object val = msg.get("esc_num");
+            num = (Integer)msg.get("N");
+        }
+
         for (int i = 0; i < fields.length; i++) {
             String field = fields[i];
             if (!formatPX4) {
@@ -324,7 +341,12 @@ public class PX4LogReader extends BinaryLogReader {
                     continue;   // Don't apply timestamp field
                 }
             }
-            update.put(msg.description.name + "." + field, msg.get(i));
+
+            if (num >= 0) {
+                update.put(msg.description.name + "." + field + num, msg.get(i));
+            } else {
+                update.put(msg.description.name + "." + field, msg.get(i));
+            }
         }
     }
 
@@ -496,6 +518,10 @@ public class PX4LogReader extends BinaryLogReader {
 
     public void clearErrors() {
         errors.clear();
+    }
+
+    public List<MavlinkLog> getMessages() {
+        return logs;
     }
 
     public static void main(String[] args) throws Exception {
