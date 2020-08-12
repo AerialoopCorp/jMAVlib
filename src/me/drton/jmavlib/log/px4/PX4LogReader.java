@@ -334,6 +334,19 @@ public class PX4LogReader extends BinaryLogReader {
             num = (Integer)msg.get("N");
         }
 
+        // Store all param updates per time slot in a map
+        Map<String, Object> param = new HashMap<String, Object>();
+
+        if ("PARM".equals(msg.description.name)) {
+            List<Map<String, Object>> store = (List<Map<String, Object>>)update.get(msg.description.name);
+            if (store == null) {
+                store = new ArrayList<Map<String, Object>>();
+                update.put(msg.description.name, store);
+            }
+
+            store.add(param);
+        }
+
         for (int i = 0; i < fields.length; i++) {
             String field = fields[i];
             if (!formatPX4) {
@@ -346,6 +359,10 @@ public class PX4LogReader extends BinaryLogReader {
                 update.put(msg.description.name + "." + field + num, msg.get(i));
             } else {
                 update.put(msg.description.name + "." + field, msg.get(i));
+            }
+
+            if ("PARM".equals(msg.description.name)) {
+                param.put(msg.description.name + "." + field, msg.get(i));
             }
         }
     }
