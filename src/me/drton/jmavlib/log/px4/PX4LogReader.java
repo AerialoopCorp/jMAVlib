@@ -36,6 +36,7 @@ public class PX4LogReader extends BinaryLogReader {
     private String tsName = null;
     private boolean tsMicros;
     private List<MavlinkLog> logs = new ArrayList<MavlinkLog>();
+    private boolean rememberFormats;
 
     private static Set<String> hideMsgs = new HashSet<String>();
     private static Map<String, String> formatNames = new HashMap<String, String>();
@@ -64,8 +65,9 @@ public class PX4LogReader extends BinaryLogReader {
         formatNames.put("M", "uint8 (mode)");
     }
 
-    public PX4LogReader(String fileName) throws IOException, FormatErrorException {
+    public PX4LogReader(String fileName, boolean rememberFormats) throws IOException, FormatErrorException {
         super(fileName);
+        this.rememberFormats = rememberFormats;
         readFormats();
         updateStatistics();
     }
@@ -421,6 +423,18 @@ public class PX4LogReader extends BinaryLogReader {
 
     private void readFormats() throws IOException, FormatErrorException {
         fieldsList = new HashMap<String, String>();
+
+        if (!rememberFormats) {
+            // clear static storage as long as we don't need it
+            PX4LogMessageDescription.messageDescriptions.clear();
+
+        } else {
+            // return with previous formats
+            formatPX4 = PX4LogMessageDescription.messageDescriptions.containsKey(PX4LogMessageDescription.TIME.type);
+            messageDescriptions.putAll(PX4LogMessageDescription.messageDescriptions);
+            return;
+        }
+
         try {
             while (true) {
                 if (fillBuffer() < 0) {
@@ -437,9 +451,16 @@ public class PX4LogReader extends BinaryLogReader {
                         try {
                             PX4LogMessageDescription msgDescr = new PX4LogMessageDescription(buffer);
                             messageDescriptions.put(msgDescr.type, msgDescr);
+
+                            // add formats to static storage
+                            if (!PX4LogMessageDescription.messageDescriptions.containsKey(msgDescr.type)) {
+                                PX4LogMessageDescription.messageDescriptions.put(msgDescr.type, msgDescr);
+                            }
+
                             if ("TIME".equals(msgDescr.name)) {
                                 formatPX4 = true;
                             }
+
                             if (!hideMsgs.contains(msgDescr.name)) {
                                 for (int i = 0; i < msgDescr.fields.length; i++) {
                                     String field = msgDescr.fields[i];
@@ -466,7 +487,7 @@ public class PX4LogReader extends BinaryLogReader {
                             PX4LogMessageDescription messageDescription = messageDescriptions.get(msgType);
                             if (messageDescription == null) {
                                 buffer.reset();
-                                throw new RuntimeException("Unknown message type: " + msgType);
+                                throw new FormatErrorException(buffer.position(), String.format("Unknown message type while reading formats: ", msgType));
                             }
                             int bodyLen = messageDescription.length - HEADER_LEN;
                             buffer.position(buffer.position() + bodyLen);
@@ -542,7 +563,7 @@ public class PX4LogReader extends BinaryLogReader {
     }
 
     public static void main(String[] args) throws Exception {
-        PX4LogReader reader = new PX4LogReader("test.bin");
+        PX4LogReader reader = new PX4LogReader("test.bin", false);
         long tStart = System.currentTimeMillis();
         while (true) {
             try {

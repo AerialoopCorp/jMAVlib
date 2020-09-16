@@ -12,6 +12,11 @@ public class PX4LogMessageDescription {
 
     static PX4LogMessageDescription FORMAT = new PX4LogMessageDescription(0x80, 89, "FMT", "BBnNZ",
             new String[]{"Type", "Length", "Name", "Format", "Labels"});
+    static PX4LogMessageDescription TIME = new PX4LogMessageDescription(129, 11, "TIME", "Q",
+            new String[]{"Type", "Length", "Name", "Format", "Labels"});
+
+    static Map<Integer, PX4LogMessageDescription> messageDescriptions
+            = new HashMap<Integer, PX4LogMessageDescription>();
 
     public final int type;
     public final int length;
