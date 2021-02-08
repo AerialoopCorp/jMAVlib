@@ -171,6 +171,10 @@ public class PX4LogReader extends BinaryLogReader {
                     if (cts != null) {
                         version.put("CTS", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(cts * (long)1e3)));
                     }
+                    String tag = (String) msg.get("Tag");
+                    if (tag != null) {
+                        version.put("Tag", tag);
+                    }
                 }
             } else {
                 if ("MSG".equals(msg.description.name)) {
