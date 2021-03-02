@@ -8,10 +8,11 @@ import java.nio.charset.Charset;
  * User: ton Date: 03.06.14 Time: 12:31
  */
 public class MAVLinkMessage {
-    public final static byte START_OF_FRAME = (byte) 0xFE;
-    public final static int HEADER_LENGTH = 6;
+    public final static byte START_OF_FRAME_V1 = (byte) 0xFE;
+    public final static byte START_OF_FRAME_V2 = (byte) 0xFD;
+    public final static int HEADER_LENGTH_V1 = 6;
+    public final static int HEADER_LENGTH_V2 = 10;
     public final static int CRC_LENGTH = 2;
-    public final static int NON_PAYLOAD_LENGTH = HEADER_LENGTH + CRC_LENGTH;
     private final MAVLinkSchema schema;
     public final MAVLinkMessageDefinition definition;
     public final int msgID;
@@ -22,6 +23,9 @@ public class MAVLinkMessage {
     public final int componentID;
     private int crc = -1;
     private Charset charset = Charset.forName("latin1");
+
+    private int headerLength = HEADER_LENGTH_V1;
+    private int nonPayloadLength = HEADER_LENGTH_V1 + CRC_LENGTH;
 
     /**
      * Create empty message by message ID (for filling and sending)
@@ -70,56 +74,90 @@ public class MAVLinkMessage {
      */
     public MAVLinkMessage(MAVLinkSchema schema, ByteBuffer buffer)
             throws MAVLinkProtocolException, MAVLinkUnknownMessage, BufferUnderflowException {
-        if (buffer.remaining() < NON_PAYLOAD_LENGTH) {
+        if (buffer.remaining() < 2) { // need to read magic byte and length
             throw new BufferUnderflowException();
         }
+
         int startPos = buffer.position();
+
         byte startSign = buffer.get();
-        if (startSign != START_OF_FRAME) {
+        if (startSign != START_OF_FRAME_V1 && startSign != START_OF_FRAME_V2) {
             throw new MAVLinkProtocolException(
-                    String.format("Invalid start sign: %02x, should be %02x", startSign, START_OF_FRAME));
+                    String.format("Invalid start sign: %02x", startSign));
         }
+
+        if (startSign == START_OF_FRAME_V2) {
+            headerLength = HEADER_LENGTH_V2;
+            nonPayloadLength = HEADER_LENGTH_V2 + CRC_LENGTH;
+
+        } else {
+            headerLength = HEADER_LENGTH_V1;
+            nonPayloadLength = HEADER_LENGTH_V1 + CRC_LENGTH;
+        }
+
         int payloadLen = buffer.get() & 0xff;
-        if (buffer.remaining() < payloadLen + NON_PAYLOAD_LENGTH - 2) { // 2 bytes was read already
+        if (buffer.remaining() < payloadLen + nonPayloadLength - 2) { // 2 bytes was read already
             buffer.position(startPos);
             throw new BufferUnderflowException();
         }
+
+        if (startSign == START_OF_FRAME_V2) {
+            buffer.get(); // incompat_flags
+            buffer.get(); // compat_flags
+        }
+
         sequence = buffer.get();
+
         systemID = buffer.get() & 0xff;
         componentID = buffer.get() & 0xff;
-        msgID = buffer.get() & 0xff;
+
+        if (startSign == START_OF_FRAME_V2) {
+            int low = buffer.get() & 0xff;
+            int mid = buffer.get() & 0xff;
+            int high = buffer.get() & 0xff;
+            msgID = low | (mid << 8) | (high << 16);
+
+        } else {
+            msgID = buffer.get() & 0xff;
+        }
+
         this.schema = schema;
+
         this.definition = schema.getMessageDefinition(msgID);
         if (definition == null) {
             // Unknown message skip it
             buffer.position(buffer.position() + payloadLen + CRC_LENGTH);
             throw new MAVLinkUnknownMessage(String.format("Unknown message: %s", msgID));
         }
+
         if (payloadLen != definition.payloadLength && payloadLen != definition.payloadMinimumLength) {
             buffer.position(buffer.position() + payloadLen + CRC_LENGTH);
             throw new MAVLinkUnknownMessage(
                     String.format("Invalid payload len for msg %s (%s): %s, should be %s", definition.name, msgID,
                             payloadLen, definition.payloadLength));
         }
-        this.payload = new byte[payloadLen];
-        buffer.get(payload);
+
+        this.payload = new byte[definition.payloadLength];
+        buffer.get(payload, 0, payloadLen);
+
         crc = Short.reverseBytes(buffer.getShort()) & 0xffff;
         int endPos = buffer.position();
         buffer.position(startPos);
         int crcCalc = calculateCRC(buffer, payloadLen);
         buffer.position(endPos);
-        /*if (crc != crcCalc) {
+        if (crc != crcCalc) {
             throw new MAVLinkUnknownMessage(
                     String.format("CRC error for msg %s (%s): %02x, should be %02x", definition.name, msgID, crc,
                             crcCalc));
-        }*/
+        }
+
         this.payloadBB = ByteBuffer.wrap(payload);
         payloadBB.order(schema.getByteOrder());
     }
 
-    public ByteBuffer encode(byte sequence) {
+    /*public ByteBuffer encode(byte sequence) {
         this.sequence = sequence;
-        ByteBuffer buf = ByteBuffer.allocate(payload.length + NON_PAYLOAD_LENGTH);
+        ByteBuffer buf = ByteBuffer.allocate(payload.length + nonPayloadLength);
         buf.order(schema.getByteOrder());
         buf.put(START_OF_FRAME);
         buf.put((byte) payload.length);
@@ -135,7 +173,7 @@ public class MAVLinkMessage {
         buf.put((byte) (crc >> 8));
         buf.flip();
         return buf;
-    }
+    }*/
 
     /**
      * Calculate CRC of the message, buffer position should be set to start of the message.
@@ -146,7 +184,7 @@ public class MAVLinkMessage {
     private int calculateCRC(ByteBuffer buf, int payloadLen) {
         buf.get();  // Skip start sign
         int c = 0xFFFF;
-        for (int i = 0; i < payloadLen + HEADER_LENGTH - 1; i++) {
+        for (int i = 0; i < payloadLen + headerLength - 1; i++) {
             c = MAVLinkCRC.accumulateCRC(buf.get(), c);
         }
         c = MAVLinkCRC.accumulateCRC(definition.extraCRC, c);

@@ -171,19 +171,45 @@ public class MAVLinkLogReader implements LogReader {
 
     private long getTime(MAVLinkMessage msg) {
         MAVLinkField field;
-        if ("POSITION_TARGET_GLOBAL_INT".equals(msg.getMsgName())) {
-            // the timestamp of this message seems to be broken
+        long ret = -1;
+
+        if ("POSITION_TARGET_GLOBAL_INT".equals(msg.getMsgName()) ||
+                "RAW_PRESSURE".equals(msg.getMsgName()) ||
+                "OPTICAL_FLOW".equals(msg.getMsgName()) ||
+                "HOME_POSITION".equals(msg.getMsgName())) {
+            // the timestamp of these messages might be broken
             return -1;
         }
+
         field = msg.definition.fieldsByName.get("time_usec");
         if (field != null) {
-            return ((Number) msg.get(field)).longValue();
+            ret = ((Number) msg.get(field)).longValue();
+
+            /*if (ret > 31536000000000l) {
+                // timestamp bigger than a year? could be a unix TS
+
+                if (startMicroseconds > 0) {
+                    ret = ret - startMicroseconds;
+
+                } else {
+                    ret = -1;
+                }
+            }*/
         }
+
         field = msg.definition.fieldsByName.get("time_boot_ms");
         if (field != null) {
-            return ((Number) msg.get(field)).longValue() * 1000;
+            ret = ((Number) msg.get(field)).longValue() * 1000;
         }
-        return -1;
+
+        // Should have boot time
+        if (ret > 31536000000000l) {
+            // timestamp bigger than a year, ignore for now
+            System.out.println(msg.getMsgName());
+            ret = -1;
+        }
+
+        return ret;
     }
 
     @Override
@@ -192,8 +218,10 @@ public class MAVLinkLogReader implements LogReader {
         if (msg == null) {
             throw new EOFException();
         }
+
         long t = getTime(msg);
         //System.out.println(t + ": " + msg.getMsgName());
+
         for (MAVLinkField field : msg.definition.fields) {
             try {
                 update.put(fieldName(msg, field), msg.get(field));

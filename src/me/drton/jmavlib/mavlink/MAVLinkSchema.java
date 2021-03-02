@@ -27,7 +27,7 @@ import java.util.List;
  */
 public class MAVLinkSchema {
     private ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
-    private final MAVLinkMessageDefinition[] definitions = new MAVLinkMessageDefinition[256];
+    private final MAVLinkMessageDefinition[] definitions = new MAVLinkMessageDefinition[16777215];
     private final Map<String, MAVLinkMessageDefinition> definitionsByName
             = new HashMap<String, MAVLinkMessageDefinition>();
     private DocumentBuilder xmlBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
