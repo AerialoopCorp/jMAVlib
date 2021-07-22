@@ -54,7 +54,10 @@ public class PX4LogMessageDescription {
         String fieldsStr = getString(buffer, 64);
         fields = fieldsStr.length() > 0 ? fieldsStr.split(",") : new String[0];
         if (!"FMT".equals(name)) {    // Workaround for buggy and useless APM "FMT" format
-            if (fields.length != format.length()) {
+            if ("GPD0".equals(name) || "GPD1".equals(name)) {
+                // these fields have formats with numbers (byte data), ignore length check
+            }
+            else if (fields.length != format.length()) {
                 throw new RuntimeException(String.format("Labels count != format length: name = \"%s\" fields = %s, format = \"%s\"",
                         name, Arrays.asList(fields), format));
             }
@@ -65,11 +68,18 @@ public class PX4LogMessageDescription {
     }
 
     public PX4LogMessage parseMessage(ByteBuffer buffer) {
-        List<Object> data = new ArrayList<Object>(format.length());
-        List<byte[]> raw = new ArrayList<byte[]>(format.length());
-        for (char f : format.toCharArray()) {
+        int len = format.length();
+
+        List<Object> data = new ArrayList<Object>(len);
+        List<byte[]> raw = new ArrayList<byte[]>(len);
+
+        char[] formatArray = format.toCharArray();
+
+        for (int i = 0; i < len; i++) {
             Object v;
             byte[] strBuf = null;
+            char f = formatArray[i];
+
             if (f == 'f') {
                 v = buffer.getFloat();
             } else if (f == 'q' || f == 'Q') {
@@ -81,7 +91,33 @@ public class PX4LogMessageDescription {
             } else if (f == 'b') {
                 v = (int) buffer.get();
             } else if (f == 'B' || f == 'M') {
-                v = buffer.get() & 0xFF;
+                int num = 0;
+                int numCounter = 0;
+
+                // Parse variable length byte fields
+                for (int y = i + 1; y < len; y++) {
+                    f = formatArray[y];
+                    if (f >= '0' && f <= '9') {
+                        int t = Integer.parseInt(String.valueOf(f));
+
+                        num = num * (int)Math.pow(10, numCounter) + t;
+
+                        numCounter++;
+
+                    } else {
+                        break;
+                    }
+                }
+
+                if (num == 0) {
+                    v = buffer.get() & 0xFF;
+
+                } else {
+                    v = new byte[num];
+                    buffer.get((byte[])v, 0, num);
+                    i += numCounter;
+                }
+
             } else if (f == 'L') {
                 v = buffer.getInt() * 1e-7;
             } else if (f == 'h') {
