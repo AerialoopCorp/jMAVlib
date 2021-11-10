@@ -313,6 +313,8 @@ public class ULogReader extends BinaryLogReader {
                     utcTimeReference = ((long)((Number) msgInfo.value).intValue()) * 1000 * 1000;
                 } else if ("replay".equals(msgInfo.getKey())) {
                     replayedLog = true;
+                } else if ("sys_uuid".equals(msgInfo.getKey())) {
+                    version.put("UID", msgInfo.value);
                 }
             } else if (msg instanceof MessageInfoMultiple) {
                 MessageInfoMultiple msgInfo = (MessageInfoMultiple) msg;
