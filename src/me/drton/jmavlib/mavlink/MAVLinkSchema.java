@@ -129,7 +129,11 @@ public class MAVLinkSchema {
     }
 
     public MAVLinkMessageDefinition getMessageDefinition(int msgID) {
-        return definitions[msgID];
+        if (msgID < definitions.length) {
+            return definitions[msgID];
+        }
+
+        return null;
     }
 
     public MAVLinkMessageDefinition getMessageDefinition(String msgName) {

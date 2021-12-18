@@ -132,10 +132,15 @@ public class PX4LogReader extends BinaryLogReader {
                 if ("TIME".equals(msg.description.name)) {
                     long t = msg.getLong(0);
                     time = t;
+
                     if (timeStart < 0) {
                         timeStart = t;
                     }
-                    timeEnd = t;
+
+                    if (t > timeEnd) {
+                        // on a rare occasion t was suddenly smaller and that screws up the plotting
+                        timeEnd = t;
+                    }
                 }
             } else {
                 long t = getAPMTimestamp(msg);
@@ -143,7 +148,9 @@ public class PX4LogReader extends BinaryLogReader {
                     if (timeStart < 0) {
                         timeStart = t;
                     }
-                    timeEnd = t;
+                    if (t > timeEnd) {
+                        timeEnd = t;
+                    }
                 }
             }
             packetsNum++;
@@ -471,6 +478,7 @@ public class PX4LogReader extends BinaryLogReader {
                                     String format = formatNames.get(Character.toString(msgDescr.format.charAt(i)));
                                     if (i != 0 || !("TimeMS".equals(field) || "TimeUS".equals(field))) {
                                         fieldsList.put(msgDescr.name + "." + field, format);
+                                        //System.out.println(msgDescr.name);
                                     }
                                 }
                             }

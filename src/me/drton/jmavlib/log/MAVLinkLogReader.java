@@ -19,6 +19,7 @@ public class MAVLinkLogReader implements LogReader {
     private long sizeUpdates = -1;
     private long sizeMicroseconds = -1;
     private long startMicroseconds = -1;
+    private long utcTimeReference = -1;
     private Set<Integer> skipMsgs = new HashSet<Integer>();
 
     public MAVLinkLogReader(String fileName, MAVLinkSchema schema) throws IOException, FormatErrorException {
@@ -155,6 +156,12 @@ public class MAVLinkLogReader implements LogReader {
 
             if (msg.getMsgName().equals("PARAM_VALUE")) {
                 parameters.put("M" + msg.systemID + ":" + msg.getString("param_id"), parseMavlinkParameter(msg));
+
+            } else if (msg.getMsgName().equals("SYSTEM_TIME")) {
+                if (utcTimeReference < 0) {
+                    utcTimeReference = msg.getLong("time_unix_usec") - timeEnd;
+                }
+
             } else if (!skipMsgs.contains(msg.msgID)) {
                 String msgSysID = "M" + msg.systemID + ":" + msg.getMsgName();
                 if (!messagesSysIDs.contains(msgSysID)) {
@@ -268,7 +275,7 @@ public class MAVLinkLogReader implements LogReader {
 
     @Override
     public long getUTCTimeReferenceMicroseconds() {
-        return -1;  // Not supported
+        return utcTimeReference;
     }
 
     @Override
