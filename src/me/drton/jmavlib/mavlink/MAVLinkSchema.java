@@ -27,9 +27,10 @@ import java.util.List;
  */
 public class MAVLinkSchema {
     private ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
-    private final MAVLinkMessageDefinition[] definitions = new MAVLinkMessageDefinition[16777215];
+    private final Map<Integer, MAVLinkMessageDefinition> definitionsByID
+        = new HashMap<Integer, MAVLinkMessageDefinition>();
     private final Map<String, MAVLinkMessageDefinition> definitionsByName
-            = new HashMap<String, MAVLinkMessageDefinition>();
+        = new HashMap<String, MAVLinkMessageDefinition>();
     private DocumentBuilder xmlBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     private File xmlFile = null;
 
@@ -68,7 +69,8 @@ public class MAVLinkSchema {
             }
         }
 
-        NodeList msgElems = ((Element) root.getElementsByTagName("messages").item(0)).getElementsByTagName("message");
+        NodeList msgElems = ((Element) root.getElementsByTagName("messages").item(
+                                 0)).getElementsByTagName("message");
         for (int i = 0; i < msgElems.getLength(); i++) {
             Element msg = (Element) msgElems.item(i);
             int msgID = Integer.parseInt(msg.getAttribute("id"));
@@ -102,6 +104,7 @@ public class MAVLinkSchema {
             int numFields = fields.size();
 
             // as per mavparse.py: when we have extensions we only sort up to the first extended field
+            // Note: sortedFields is a view, so we do in-place sorting.
             List<MAVLinkField> sortedFields = fields.subList(0, extensionIndex);
             Collections.sort(sortedFields, new Comparator<MAVLinkField>() {
                 @Override
@@ -116,24 +119,16 @@ public class MAVLinkSchema {
                 }
             });
 
-            // add the rest of the fields after the extension index.
-            for (int k = extensionIndex; k < numFields; k++) {
-                sortedFields.add(fields.get(k));
-            }
-            fields = sortedFields;
-
-            if (msgID >= 0 && msgID < 256) {
-                addMessageDefinition(new MAVLinkMessageDefinition(msgID, msgName, fields.toArray(new MAVLinkField[numFields]), extensionIndex));
+            // 0 to uint24 max (2^24)
+            if (msgID >= 0 && msgID < 16777215) {
+                addMessageDefinition(new MAVLinkMessageDefinition(msgID, msgName,
+                                                                  fields.toArray(new MAVLinkField[numFields]), extensionIndex));
             }
         }
     }
 
     public MAVLinkMessageDefinition getMessageDefinition(int msgID) {
-        if (msgID < definitions.length) {
-            return definitions[msgID];
-        }
-
-        return null;
+        return definitionsByID.get(msgID);
     }
 
     public MAVLinkMessageDefinition getMessageDefinition(String msgName) {
@@ -145,7 +140,7 @@ public class MAVLinkSchema {
     }
 
     public void addMessageDefinition(MAVLinkMessageDefinition definition) {
-        definitions[definition.id] = definition;
+        definitionsByID.put(definition.id, definition);
         definitionsByName.put(definition.name, definition);
     }
 }

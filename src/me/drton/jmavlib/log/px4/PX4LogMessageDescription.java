@@ -154,7 +154,8 @@ public class PX4LogMessageDescription {
 
     @Override
     public String toString() {
-        return String.format("PX4LogMessageDescription: type=%s, length=%s, name=%s, format=%s, fields=%s", type,
-                length, name, format, Arrays.asList(fields));
+        return String.format("PX4LogMessageDescription: type=%s, length=%s, name=%s, format=%s, fields=%s",
+                             type,
+                             length, name, format, Arrays.asList(fields));
     }
 }
