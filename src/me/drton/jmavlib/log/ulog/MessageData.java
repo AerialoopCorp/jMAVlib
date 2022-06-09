@@ -24,8 +24,20 @@ public class MessageData {
             throw new FormatErrorException("Message " + format.name + " has no timestamp field");
         }
 
+        if ("mission".equals(format.name)) {
+            throw new FormatErrorException("Message " + format.name + " has broken timestamp field");
+        }
+
+        if ("vehicle_attitude".equals(format.name)) {
+            //throw new FormatErrorException("Message " + format.name + " has broken timestamp field");
+        }
+
         //TODO: parse non-64bit timestamp (depending on field type) & handle wrap-arounds
         timestamp = ((Number) t).longValue();
+
+        /*if (timestamp > 1013042100) {
+            //throw new FormatErrorException("Message " + format.name + " has broken timestamp field");
+        }*/
     }
 
     public Object get(int idx) {

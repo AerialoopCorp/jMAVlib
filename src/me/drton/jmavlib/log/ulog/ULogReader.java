@@ -11,6 +11,7 @@ import javax.swing.JFileChooser;
 
 import me.drton.jmavlib.log.BinaryLogReader;
 import me.drton.jmavlib.log.FormatErrorException;
+import sun.reflect.annotation.ExceptionProxy;
 
 /**
  * User: ton Date: 03.06.13 Time: 14:18
@@ -489,7 +490,11 @@ public class ULogReader extends BinaryLogReader {
                         buffer.position(buffer.position() + msgSize - 1);
                         continue;
                     }
-                    msg = new MessageData(subscription.format, buffer, subscription.multiID);
+                    try {
+                        msg = new MessageData(subscription.format, buffer, subscription.multiID);
+                    }catch(Exception e) {
+                        msg = null;
+                    }
                     break;
                 case MESSAGE_TYPE_FLAG_BITS:
                     msg = new MessageFlagBits(buffer, msgSize);
