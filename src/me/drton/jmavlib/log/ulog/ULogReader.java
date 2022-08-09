@@ -430,9 +430,35 @@ public class ULogReader extends BinaryLogReader {
     public long readUpdate(Map<String, Object> update) throws IOException, FormatErrorException {
         while (true) {
             Object msg = readMessage();
+
             if (msg instanceof MessageData) {
                 applyMsg(update, (MessageData) msg);
+
                 return ((MessageData) msg).timestamp;
+            }
+
+            // provide param entries the same way as PX4LOG
+            if (msg instanceof MessageParameter) {
+                MessageParameter msgParam = (MessageParameter) msg;
+                // a replayed log can contain many parameter updates, so we ignore them here
+                // starting parameters should have been added to the map by updateStatistics() already, so here we
+                // only process updates:
+                if (parameters.containsKey(msgParam.getKey()) && !replayedLog) {
+                    // Store all param updates per time slot in a map
+                    Map<String, Object> param = new HashMap<String, Object>();
+
+                    List<Map<String, Object>> store = (List<Map<String, Object>>) update.get("PARM");
+                    if (store == null) {
+                        store = new ArrayList<Map<String, Object>>();
+                        update.put("PARM", store);
+                    }
+
+                    store.add(param);
+
+                    param.put("PARM.Name", msgParam.getKey());
+                    param.put("PARM.Value", msgParam.value);
+                    param.put("PARM.Type", "float".equals(msgParam.format.type) ? new Integer(2) : new Integer(1));
+                }
             }
         }
     }
