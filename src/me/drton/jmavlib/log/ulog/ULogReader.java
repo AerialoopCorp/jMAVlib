@@ -11,7 +11,6 @@ import javax.swing.JFileChooser;
 
 import me.drton.jmavlib.log.BinaryLogReader;
 import me.drton.jmavlib.log.FormatErrorException;
-import sun.reflect.annotation.ExceptionProxy;
 
 /**
  * User: ton Date: 03.06.13 Time: 14:18
