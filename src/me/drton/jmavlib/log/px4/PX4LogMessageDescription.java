@@ -82,6 +82,8 @@ public class PX4LogMessageDescription {
 
             if (f == 'f') {
                 v = buffer.getFloat();
+            } else if (f == 'd') {
+                v = buffer.getDouble();
             } else if (f == 'q' || f == 'Q') {
                 v = buffer.getLong();
             } else if (f == 'i') {

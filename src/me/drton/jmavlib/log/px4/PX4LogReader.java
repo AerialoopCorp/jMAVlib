@@ -55,6 +55,7 @@ public class PX4LogReader extends BinaryLogReader {
         formatNames.put("q", "int64");
         formatNames.put("Q", "uint64");
         formatNames.put("f", "float");
+        formatNames.put("d", "double");
         formatNames.put("c", "int16 * 1e-2");
         formatNames.put("C", "uint16 * 1e-2");
         formatNames.put("e", "int32 * 1e-2");
@@ -63,6 +64,8 @@ public class PX4LogReader extends BinaryLogReader {
         formatNames.put("N", "char[16]");
         formatNames.put("Z", "char[64]");
         formatNames.put("M", "uint8 (mode)");
+        formatNames.put("h", "int16");
+        formatNames.put("H", "uint16");
     }
 
     public PX4LogReader(String fileName, boolean rememberFormats) throws IOException, FormatErrorException {
