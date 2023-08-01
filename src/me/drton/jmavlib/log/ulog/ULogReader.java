@@ -54,6 +54,7 @@ public class ULogReader extends BinaryLogReader {
     private long sizeMicroseconds = -1;
     private long startMicroseconds = -1;
     private long utcTimeReference = -1;
+    private long utcTimeOffset = -1;
     private long logStartTimestamp = -1;
     private boolean nestedParsingDone = false;
     private Map<String, Object> version = new HashMap<String, Object>();
@@ -139,7 +140,7 @@ public class ULogReader extends BinaryLogReader {
 
     @Override
     public long getUTCTimeReferenceMicroseconds() {
-        return utcTimeReference;
+        return utcTimeReference + utcTimeOffset;
     }
 
     @Override
@@ -308,8 +309,10 @@ public class ULogReader extends BinaryLogReader {
                     version.put("HW", msgInfo.value);
                 } else if ("ver_sw".equals(msgInfo.getKey())) {
                     version.put("FW", msgInfo.value);
+                } else if ("ver_sw_tag".equals(msgInfo.getKey())) {
+                    version.put("Tag", msgInfo.value);
                 } else if ("time_ref_utc".equals(msgInfo.getKey())) {
-                    utcTimeReference = ((long)((Number) msgInfo.value).intValue()) * 1000 * 1000;
+                    utcTimeOffset = ((long)((Number) msgInfo.value).intValue()) * 1000 * 1000;
                 } else if ("replay".equals(msgInfo.getKey())) {
                     replayedLog = true;
                 } else if ("sys_uuid".equals(msgInfo.getKey())) {
@@ -335,6 +338,13 @@ public class ULogReader extends BinaryLogReader {
                 }
                 if (timeEnd < msgData.timestamp) { timeEnd = msgData.timestamp; }
                 lastTime = msgData.timestamp;
+
+                if (utcTimeReference <= 0 && "vehicle_gps_position".equals(msgData.format.name)) {
+                    Object o = msgData.get("time_utc_usec");
+                    if (o != null) {
+                        utcTimeReference = (Long)o;
+                    }
+                }
             } else if (msg instanceof MessageLog) {
                 MessageLog msgLog = (MessageLog) msg;
                 loggedMessages.add(msgLog);
