@@ -2,11 +2,10 @@ package me.drton.jmavlib.log.px4;
 
 import me.drton.jmavlib.log.BinaryLogReader;
 import me.drton.jmavlib.log.FormatErrorException;
-import me.drton.jmavlib.log.MAVLinkLogReader;
+import me.drton.jmavlib.log.LogMessage;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -35,7 +34,7 @@ public class PX4LogReader extends BinaryLogReader {
     private List<Exception> errors = new ArrayList<Exception>();
     private String tsName = null;
     private boolean tsMicros;
-    private List<MavlinkLog> logs = new ArrayList<MavlinkLog>();
+    private List<LogMessage> logs = new ArrayList<LogMessage>();
     private boolean rememberFormats;
 
     private static Set<String> hideMsgs = new HashSet<String>();
@@ -573,7 +572,7 @@ public class PX4LogReader extends BinaryLogReader {
         errors.clear();
     }
 
-    public List<MavlinkLog> getMessages() {
+    public List<LogMessage> getMessages() {
         return logs;
     }
 

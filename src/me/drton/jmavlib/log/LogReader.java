@@ -91,6 +91,8 @@ public interface LogReader {
      */
     Map<String, Object> getParameters();
 
+    List<LogMessage> getMessages();
+
     /**
      * Return list on non-fatal errors happened during log reading.
      *

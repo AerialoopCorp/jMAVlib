@@ -1,8 +1,10 @@
 package me.drton.jmavlib.log.ulog;
 
+import me.drton.jmavlib.log.LogMessage;
+
 import java.nio.ByteBuffer;
 
-public class MessageLog {
+public class MessageLog implements LogMessage {
     public final String message;
     public final long timestamp;
     public final char logLevel;
@@ -33,6 +35,16 @@ public class MessageLog {
                 return "DEBUG";
         }
         return "(unknown)";
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public long getTimestamp() {
+        return timestamp;
     }
 
     @Override

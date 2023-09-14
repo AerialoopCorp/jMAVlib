@@ -1,10 +1,11 @@
 package me.drton.jmavlib.log.px4;
 
+import me.drton.jmavlib.log.LogMessage;
 import me.drton.jmavlib.log.ulog.MessageFormat;
 
 import java.nio.ByteBuffer;
 
-public class MavlinkLog {
+public class MavlinkLog implements LogMessage {
     public final String message;
     public final long timestamp;
     public final int logLevel;
@@ -35,6 +36,16 @@ public class MavlinkLog {
             return "DEBUG";
         }
         return "(unknown)";
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public long getTimestamp() {
+        return timestamp;
     }
 
     @Override

@@ -11,6 +11,7 @@ import javax.swing.JFileChooser;
 
 import me.drton.jmavlib.log.BinaryLogReader;
 import me.drton.jmavlib.log.FormatErrorException;
+import me.drton.jmavlib.log.LogMessage;
 
 /**
  * User: ton Date: 03.06.13 Time: 14:18
@@ -59,7 +60,7 @@ public class ULogReader extends BinaryLogReader {
     private boolean nestedParsingDone = false;
     private Map<String, Object> version = new HashMap<String, Object>();
     private Map<String, Object> parameters = new HashMap<String, Object>();
-    public ArrayList<MessageLog> loggedMessages = new ArrayList<MessageLog>();
+    public ArrayList<LogMessage> loggedMessages = new ArrayList<LogMessage>();
 
     private String hardfaultPlainText = "";
 
@@ -151,6 +152,11 @@ public class ULogReader extends BinaryLogReader {
     @Override
     public Map<String, Object> getParameters() {
         return parameters;
+    }
+
+    @Override
+    public List<LogMessage> getMessages() {
+        return loggedMessages;
     }
 
     /**

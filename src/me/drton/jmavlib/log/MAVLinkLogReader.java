@@ -291,6 +291,11 @@ public class MAVLinkLogReader implements LogReader {
     }
 
     @Override
+    public List<LogMessage> getMessages() {
+        return null;
+    }
+
+    @Override
     public List<Exception> getErrors() {
         return Collections.emptyList();
     }
