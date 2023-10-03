@@ -38,6 +38,8 @@ public class ULogReader extends BinaryLogReader {
     private long dataStart = 0;
     private Map<String, MessageFormat> messageFormats = new HashMap<String, MessageFormat>();
 
+    private Map<String, String> additionalContent = new LinkedHashMap<>();
+
     private class Subscription {
         public Subscription(MessageFormat f, int multiID) {
             this.format = f;
@@ -61,8 +63,6 @@ public class ULogReader extends BinaryLogReader {
     private Map<String, Object> version = new HashMap<String, Object>();
     private Map<String, Object> parameters = new HashMap<String, Object>();
     public ArrayList<LogMessage> loggedMessages = new ArrayList<LogMessage>();
-
-    private String hardfaultPlainText = "";
 
     private Vector<Long> appendedOffsets = new Vector<Long>();
     int currentAppendingOffsetIndex =
@@ -236,7 +236,7 @@ public class ULogReader extends BinaryLogReader {
                         }
                     }
                     if (appendedOffsets.size() > 0) {
-                        System.out.println("log contains appended data");
+                        System.out.println("Log contains appended data");
                     }
                 }
                 boolean containsUnknownIncompatBits = false;
@@ -291,7 +291,7 @@ public class ULogReader extends BinaryLogReader {
                 MessageParameter msgParam = (MessageParameter) msg;
                 // a replayed log can contain many parameter updates, so we ignore them here
                 if (parameters.containsKey(msgParam.getKey()) && !replayedLog) {
-                    System.out.println("update to parameter: " + msgParam.getKey() + " value: " + msgParam.value +
+                    System.out.println("Update to parameter: " + msgParam.getKey() + " value: " + msgParam.value +
                                        " at t = " + lastTime);
                     // maintain a record of parameters which change during flight
                     if (parameterUpdates.containsKey(msgParam.getKey())) {
@@ -309,6 +309,8 @@ public class ULogReader extends BinaryLogReader {
 
             } else if (msg instanceof MessageInfo) {
                 MessageInfo msgInfo = (MessageInfo) msg;
+                //System.out.println("Info msg: " + msgInfo.getKey());
+
                 if ("sys_name".equals(msgInfo.getKey())) {
                     systemName = (String) msgInfo.value;
                 } else if ("ver_hw".equals(msgInfo.getKey())) {
@@ -324,12 +326,26 @@ public class ULogReader extends BinaryLogReader {
                 } else if ("sys_uuid".equals(msgInfo.getKey())) {
                     version.put("UID", msgInfo.value);
                 }
+
             } else if (msg instanceof MessageInfoMultiple) {
                 MessageInfoMultiple msgInfo = (MessageInfoMultiple) msg;
-                //System.out.println(msgInfo.getKey());
-                if ("hardfault_plain".equals(msgInfo.getKey())) {
-                    // append all hardfaults to one String (we should be looking at msgInfo.isContinued as well)
-                    hardfaultPlainText += (String)msgInfo.value;
+                //System.out.println("Multi info msg: " + msgInfo.getKey() + " (" + lastTime);
+                String key = msgInfo.getKey() + " (" + Math.round(lastTime / 1e6) + ")";
+
+                // append all text info to one String per key (we should be looking at msgInfo.isContinued as well)
+                if (additionalContent.containsKey(key)) {
+                    String data = additionalContent.get(key);
+
+                    // perf data comes without line separators, each line is in a new message
+                    // boot and hardfault data on the other hand is written as continued text with separators
+                    if (msgInfo.getKey().startsWith("perf")) {
+                        data += System.lineSeparator();
+                    }
+
+                    data += (String)msgInfo.value;
+                    additionalContent.put(key, data);
+                } else {
+                    additionalContent.put(key, (String)msgInfo.value);
                 }
 
             } else if (msg instanceof MessageData) {
@@ -392,12 +408,6 @@ public class ULogReader extends BinaryLogReader {
                 System.err.println(e.getMessage());
             }
             errors.clear();
-        }
-
-        if (hardfaultPlainText.length() > 0) {
-            // TODO: find a better way to show this to the user?
-            System.out.println("Log contains hardfault data:");
-            System.out.println(hardfaultPlainText);
         }
     }
 
@@ -708,5 +718,10 @@ public class ULogReader extends BinaryLogReader {
     @Override
     public void clearErrors() {
         errors.clear();
+    }
+
+    @Override
+    public Map<String, String> getAdditionalContent() {
+        return additionalContent;
     }
 }

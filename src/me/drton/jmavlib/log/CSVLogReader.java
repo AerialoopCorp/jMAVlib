@@ -179,6 +179,11 @@ public class CSVLogReader implements LogReader {
     }
 
     @Override
+    public Map<String, String> getAdditionalContent() {
+        return null;
+    }
+
+    @Override
     public void clearErrors() {
     }
 

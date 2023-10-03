@@ -6,6 +6,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.util.Map;
 
 /**
  * User: ton Date: 03.06.13 Time: 14:51
@@ -66,5 +67,9 @@ public abstract class BinaryLogReader implements LogReader {
         }
         channelPosition += n;
         return n;
+    }
+
+    public Map<String, String> getAdditionalContent() {
+        return null;
     }
 }

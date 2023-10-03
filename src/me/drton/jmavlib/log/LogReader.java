@@ -100,6 +100,8 @@ public interface LogReader {
      */
     List<Exception> getErrors();
 
+    Map<String, String> getAdditionalContent();
+
     /**
      * Clear errors list.
      */
