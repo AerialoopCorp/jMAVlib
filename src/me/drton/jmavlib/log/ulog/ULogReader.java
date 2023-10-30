@@ -364,7 +364,8 @@ public class ULogReader extends BinaryLogReader {
                 if (utcTimeReference <= 0 && "vehicle_gps_position".equals(msgData.format.name)) {
                     Object o = msgData.get("time_utc_usec");
                     if (o != null) {
-                        utcTimeReference = (Long)o;
+                        // Subtract the boot time when we found the first UTC timestamp to get the actual starting time
+                        utcTimeReference = (Long)o - lastTime;
                     }
                 }
             } else if (msg instanceof MessageLog) {
